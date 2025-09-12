@@ -1,12 +1,19 @@
 # api/serializers.py
 from rest_framework import serializers
 from students.models import StudentsProjection
+from consents.utils import should_mask, mask_student_data
 
 class StudentsProjectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentsProjection
         fields = ["student_id", "data", "updated_at"]
 
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and should_mask(request, instance.student_id):
+            rep["data"] = mask_student_data(rep["data"])
+        return rep
 class EligibilityRequestSerializer(serializers.Serializer):
     min_gpa = serializers.FloatField(required=False, default=0.0)
     language = serializers.CharField(required=False, allow_blank=True, default="")

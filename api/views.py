@@ -4,7 +4,7 @@ from django.db import connection
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+from consents.utils import should_mask, mask_student_data
 from students.models import StudentsProjection
 from .serializers import (
     StudentsProjectionSerializer,
@@ -128,17 +128,17 @@ class StudentsProjectionViewSet(viewsets.ReadOnlyModelViewSet):
         items = []
         for sp in qs:
             sdata = sp.data or {}
+            # маскирование по согласию/роли
+            if should_mask(request, sp.student_id):
+                sdata = mask_student_data(sdata)
+
             score, reasons = _score_student(sdata, criteria)
-            # минимальный фильтр: отсекаем тех, у кого GPA ниже порога
-            if sdata.get("gpa", 0) < criteria.get("min_gpa", 0):
-                pass  # можно не отсекать, а оставить с меньшим score
             items.append({
                 "student_id": sp.student_id,
                 "score": round(score, 3),
                 "explanations": reasons,
                 "data": sdata,
             })
-
         items.sort(key=lambda x: x["score"], reverse=True)
         limit = criteria.get("limit", 50)
         resp = {

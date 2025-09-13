@@ -33,16 +33,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "rest_framework",
     "drf_spectacular",
-
     "metadata",
     "integrations",
     "corsheaders",
-    "students",
-    "consents",
     "api",
+    "students.apps.StudentsConfig",
+    "consents.apps.ConsentsConfig",
 ]
 
 

@@ -1,6 +1,9 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+import hashlib
+
+
 
 EVENT_STUDENT_UPDATED = "student.updated"
 EVENT_CONSENT_CHANGED = "consent.changed"
@@ -51,3 +54,40 @@ class WebhookDelivery(models.Model):
         indexes = [
             models.Index(fields=["status", "next_retry_at"]),
         ]
+class ApiClient(models.Model):
+    """
+    Сервисный клиент с API-ключом и скоупами.
+    Сам ключ храним в виде SHA256 (key_hash). Сырой ключ не сохраняем.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=120, unique=True)
+    is_active = models.BooleanField(default=True)
+    scopes = models.JSONField(default=list, blank=True)  # напр.: ["students:write"]
+    prefix = models.CharField(max_length=12, blank=True) # первые символы ключа для отладки
+    key_hash = models.CharField(max_length=64)           # sha256(raw_key)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "api_clients"
+
+    # --- helpers ---
+    @staticmethod
+    def _hash(raw: str) -> str:
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    def set_key(self, raw_key: str):
+        self.key_hash = self._hash(raw_key)
+        self.prefix = raw_key[:8]
+
+    @classmethod
+    def get_by_key(cls, raw_key: str):
+        if not raw_key:
+            return None
+        h = cls._hash(raw_key)
+        try:
+            return cls.objects.get(key_hash=h, is_active=True)
+        except cls.DoesNotExist:
+            return None

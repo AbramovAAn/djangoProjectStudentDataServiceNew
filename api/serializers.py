@@ -37,3 +37,32 @@ class EligibilityResponseSerializer(serializers.Serializer):
     criteria = EligibilityRequestSerializer()
     count = serializers.IntegerField()
     results = EligibilityItemSerializer(many=True)
+class StudentWriteSerializer(serializers.Serializer):
+    student_id = serializers.UUIDField(required=False)
+    data = serializers.DictField()
+
+    def validate_data(self, v: dict) -> dict:
+        # Мягкая валидация базовых полей
+        gpa = v.get("gpa")
+        if gpa is not None:
+            try:
+                g = float(gpa)
+            except Exception:
+                raise serializers.ValidationError({"gpa": "Must be a number"})
+            if not (0 <= g <= 10):
+                raise serializers.ValidationError({"gpa": "Must be between 0 and 10"})
+
+        course = v.get("course")
+        if course is not None and (not isinstance(course, int) or course < 1 or course > 6):
+            raise serializers.ValidationError({"course": "Must be integer 1..6"})
+
+        skills = v.get("skills")
+        if skills is not None and not isinstance(skills, list):
+            raise serializers.ValidationError({"skills": "Must be a list of strings"})
+
+        lang = v.get("language")
+        if lang is not None and lang not in ("en", "ru"):
+            raise serializers.ValidationError({"language": "Allowed: 'en' or 'ru'"})
+
+        # сюда позже добавить проверки по справочникам metadata .*
+        return v

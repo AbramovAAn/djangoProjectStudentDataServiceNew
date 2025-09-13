@@ -3,15 +3,20 @@ from typing import Dict, Any, List
 from django.db import connection
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from consents.utils import should_mask, mask_student_data
-from students.models import StudentsProjection
 from .serializers import (
     StudentsProjectionSerializer,
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
 )
-
+import uuid
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from students.models import StudentsProjection
+from .serializers import StudentWriteSerializer
+from integrations.auth import APIKeyAuthentication
+from integrations.permissions import HasServiceScope
 def _score_student(sdata: Dict[str, Any], criteria: Dict[str, Any]) -> (float, Dict[str, Any]):
     # значения по умолчанию для весов
     w = {
@@ -147,3 +152,27 @@ class StudentsProjectionViewSet(viewsets.ReadOnlyModelViewSet):
             "results": items[:limit],
         }
         return Response(EligibilityResponseSerializer(resp).data)
+class StudentsIngestView(APIView):
+    """
+    Upsert студента по student_id (если не указан — генерируем).
+    Только для сервисных ключей со скоупом 'students:write'.
+    """
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [HasServiceScope]
+    required_scope = "students:write"
+
+    def post(self, request, *args, **kwargs):
+        ser = StudentWriteSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        student_id = ser.validated_data.get("student_id") or uuid.uuid4()
+        data = ser.validated_data["data"]
+
+        obj, created = StudentsProjection.objects.update_or_create(
+            student_id=student_id,
+            defaults={"data": data},
+        )
+        return Response(
+            {"student_id": str(obj.student_id), "created": created},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )

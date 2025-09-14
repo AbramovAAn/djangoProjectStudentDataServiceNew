@@ -9,14 +9,19 @@ from .serializers import (
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
 )
+from rest_framework.generics import ListAPIView
+from metadata.models import StudyProgram, Skill, Language
+from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
-from integrations.auth import APIKeyAuthentication
-from integrations.permissions import HasServiceScope
 from rest_framework.response import Response
 from rest_framework import status
+import uuid
+
+from integrations.auth import APIKeyAuthentication
+from integrations.permissions import HasServiceScope
 from .serializers import StudentPayloadSerializer
 from students.models import StudentsProjection
-import uuid
+
 def _score_student(sdata: Dict[str, Any], criteria: Dict[str, Any]) -> (float, Dict[str, Any]):
     # значения по умолчанию для весов
     w = {
@@ -173,6 +178,60 @@ class StudentsIngestView(APIView):
         obj, created = StudentsProjection.objects.update_or_create(
             student_id=student_id,
             defaults={"data": data},
+        )
+        return Response(
+            {"student_id": str(obj.student_id), "created": created},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+class StudyProgramSerializer(ModelSerializer):
+    class Meta:
+        model = StudyProgram
+        fields = ("code", "name", "is_active")
+
+class SkillSerializer(ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = ("code", "name", "is_active")
+
+class LanguageSerializer(ModelSerializer):
+    class Meta:
+        model = Language
+        fields = ("code", "name", "is_active")
+
+class ProgramsListView(ListAPIView):
+    queryset = StudyProgram.objects.filter(is_active=True).order_by("name")
+    serializer_class = StudyProgramSerializer
+    permission_classes = []          # без аутентификации
+    authentication_classes = []
+
+class SkillsListView(ListAPIView):
+    queryset = Skill.objects.filter(is_active=True).order_by("code")
+    serializer_class = SkillSerializer
+    permission_classes = []
+    authentication_classes = []
+
+class LanguagesListView(ListAPIView):
+    queryset = Language.objects.filter(is_active=True).order_by("code")
+    serializer_class = LanguageSerializer
+    permission_classes = []
+    authentication_classes = []
+class StudentUpsertView(APIView):
+    """
+    Idempotent upsert по заданному UUID.
+    BODY: { "data": { ...валидируемый payload... } }
+    """
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [HasServiceScope]
+    required_scope = "students:write"
+
+    def put(self, request, student_id: uuid.UUID, *args, **kwargs):
+        payload = request.data.get("data") or {}
+        ser = StudentPayloadSerializer(data=payload)
+        ser.is_valid(raise_exception=True)
+
+        obj, created = StudentsProjection.objects.update_or_create(
+            student_id=student_id,
+            defaults={"data": ser.validated_data},
         )
         return Response(
             {"student_id": str(obj.student_id), "created": created},

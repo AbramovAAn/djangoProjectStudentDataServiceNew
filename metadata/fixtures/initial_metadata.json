@@ -1,0 +1,17 @@
+[
+  {"model": "metadata.studyprogram", "pk": 1, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"BI","name":"Бизнес-информатика","is_active":true}},
+  {"model": "metadata.studyprogram", "pk": 2, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"ISIT","name":"Информационные системы и технологии","is_active":true}},
+  {"model": "metadata.studyprogram", "pk": 3, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"SE","name":"Программная инженерия","is_active":true}},
+
+  {"model": "metadata.language", "pk": 1, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"ru","name":"Русский","is_active":true}},
+  {"model": "metadata.language", "pk": 2, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"en","name":"English","is_active":true}},
+
+  {"model": "metadata.skill", "pk": 1, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"python","name":"Python","is_active":true}},
+  {"model": "metadata.skill", "pk": 2, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"sql","name":"SQL","is_active":true}},
+  {"model": "metadata.skill", "pk": 3, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"excel","name":"Excel","is_active":true}},
+  {"model": "metadata.skill", "pk": 4, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"pandas","name":"pandas","is_active":true}},
+  {"model": "metadata.skill", "pk": 5, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"numpy","name":"NumPy","is_active":true}},
+  {"model": "metadata.skill", "pk": 6, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"powerbi","name":"Power BI","is_active":true}},
+  {"model": "metadata.skill", "pk": 7, "fields": {"created_at":"2025-09-13T08:00:00Z","updated_at":"2025-09-13T08:00:00Z","code":"javascript","name":"JavaScript","is_active":true}}
+]
+

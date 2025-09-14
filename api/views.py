@@ -9,14 +9,14 @@ from .serializers import (
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
 )
-import uuid
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from students.models import StudentsProjection
-from .serializers import StudentWriteSerializer
 from integrations.auth import APIKeyAuthentication
 from integrations.permissions import HasServiceScope
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import StudentPayloadSerializer
+from students.models import StudentsProjection
+import uuid
 def _score_student(sdata: Dict[str, Any], criteria: Dict[str, Any]) -> (float, Dict[str, Any]):
     # значения по умолчанию для весов
     w = {
@@ -161,12 +161,14 @@ class StudentsIngestView(APIView):
     permission_classes = [HasServiceScope]
     required_scope = "students:write"
 
-    def post(self, request, *args, **kwargs):
-        ser = StudentWriteSerializer(data=request.data)
+    def post(self, request):
+        payload = request.data.get("data") or {}
+        ser = StudentPayloadSerializer(data=payload)
         ser.is_valid(raise_exception=True)
 
-        student_id = ser.validated_data.get("student_id") or uuid.uuid4()
-        data = ser.validated_data["data"]
+        data = ser.validated_data
+        # upsert по ФИО + программе + курсу (как пример) — или снаружи передавайте student_id
+        student_id = request.data.get("student_id") or uuid.uuid4()
 
         obj, created = StudentsProjection.objects.update_or_create(
             student_id=student_id,

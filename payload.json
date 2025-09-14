@@ -1,0 +1,10 @@
+{
+  "data": {
+    "fio": "Тестовый Студент",
+    "program": "Бизнес-информатика",
+    "course": 3,
+    "gpa": 8.4,
+    "skills": ["python", "sql", "excel"],
+    "language": "en"
+  }
+}

@@ -1,7 +1,9 @@
 # api/serializers.py
-from rest_framework import serializers
 from students.models import StudentsProjection
 from consents.utils import should_mask, mask_student_data
+import re
+from rest_framework import serializers
+from metadata.models import StudyProgram, Skill, Language
 
 class StudentsProjectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,3 +68,28 @@ class StudentWriteSerializer(serializers.Serializer):
 
         # сюда позже добавить проверки по справочникам metadata .*
         return v
+class StudentPayloadSerializer(serializers.Serializer):
+    fio     = serializers.CharField(max_length=255)
+    program = serializers.SlugRelatedField(slug_field="name", queryset=StudyProgram.objects.filter(is_active=True))
+    course  = serializers.IntegerField(min_value=1, max_value=6)
+    gpa     = serializers.FloatField(min_value=0.0, max_value=10.0)
+    skills  = serializers.ListField(
+        child=serializers.SlugRelatedField(slug_field="code", queryset=Skill.objects.filter(is_active=True)),
+        allow_empty=True
+    )
+    language = serializers.SlugRelatedField(slug_field="code", queryset=Language.objects.filter(is_active=True))
+    note     = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+    def validate_fio(self, v: str):
+        # простая проверка ФИО: буквы, пробелы, дефисы, минимум 5 символов
+        if not re.fullmatch(r"[A-Za-zА-Яа-яЁё\-\s']{5,}", v):
+            raise serializers.ValidationError("Некорректное ФИО")
+        return v
+
+    def to_internal_value(self, data):
+        # нормализуем skills к списку строк (вместо объектов) после .is_valid()
+        ret = super().to_internal_value(data)
+        ret["skills"] = [s.code for s in ret["skills"]]
+        ret["program"] = ret["program"].name
+        ret["language"] = ret["language"].code
+        return ret
